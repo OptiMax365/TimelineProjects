@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timeline Projects</title>
+<style>
+:root{
+  --bg-dark:#030d05;--bg-mid:#08180c;--bg-light:#102814;
+  --green-primary:#2e8b57;--green-bright:#4caf50;--green-glow:rgba(76,175,80,0.3);
+  --text-main:#e8f5e9;--text-muted:#a5d6a7;--white:#ffffff;
+  --card-bg:rgba(12,30,16,0.96);--border-color:#2e8b57;--shadow:0 10px 40px rgba(0,0,0,0.6);
+  --radius:14px;--font-main:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:var(--font-main);background:radial-gradient(circle at 50% 30%,var(--bg-light)0%,var(--bg-dark)100%);color:var(--text-main)}
+
+/* Header & Menu */
+#app-header{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(5,16,7,0.97);backdrop-filter:blur(10px);border-bottom:2px solid var(--green-primary);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:100}
+#app-header h1{font-size:1.1rem;letter-spacing:1.5px;color:var(--green-bright);text-transform:uppercase;text-shadow:0 0 12px var(--green-glow)}
+.header-left{display:flex;align-items:center;gap:14px}
+.file-menu-wrap{position:relative}
+.file-btn{background:transparent;color:var(--green-bright);border:1px solid var(--green-primary);padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.85rem;transition:.2s}
+.file-btn:hover{background:rgba(46,139,87,.2)}
+.file-dropdown{position:absolute;top:100%;left:0;margin-top:6px;background:#0d2610;border:1px solid var(--border-color);border-radius:8px;padding:6px 0;min-width:200px;display:none;box-shadow:var(--shadow);z-index:110}
+.file-dropdown.show{display:block}
+.file-dropdown button{width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:var(--text-main);cursor:pointer;font-size:.88rem}
+.file-dropdown button:hover{background:rgba(46,139,87,.3);color:white}
+.file-dropdown .divider{height:1px;background:rgba(255,255,255,.1);margin:4px 0}
+
+.header-controls{display:flex;gap:10px}
+.btn{background:var(--green-primary);color:var(--white);border:1px solid var(--green-bright);padding:7px 12px;border-radius:7px;cursor:pointer;font-weight:600;font-size:.82rem;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--green-bright);transform:translateY(-1px)}
+.btn.exit{background:#7a1515;border-color:#962020}.btn.exit:hover{background:#962020}
+.btn-preview{background:#1a4a8b;border-color:#2979ff}.btn-preview:hover{background:#2979ff}
+.btn-edit{background:#5a3800;border-color:#ff9800}.btn-edit:hover{background:#ff9800}
+.btn-stack .btn{width:100%;justify-content:flex-start}
+
+/* Timeline */
+#timeline-wrapper{position:fixed;top:54px;left:0;right:0;bottom:0;overflow-y:auto;scroll-behavior:smooth;display:flex;flex-direction:column;align-items:center;padding-bottom:90px}
+#timeline-wrapper::-webkit-scrollbar{width:6px}
+#timeline-wrapper::-webkit-scrollbar-thumb{background:var(--green-primary);border-radius:3px}
+#timeline-empty{margin-top:30vh;text-align:center;color:var(--text-muted)}
+#timeline-empty div{font-size:3.5rem;margin-bottom:12px}
+
+/* Cards */
+.timeline-card{width:96%;max-width:1100px;min-height:82vh;margin:14px 0;background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;position:relative;animation:slideUp .4s cubic-bezier(.2,.8,.2,1) forwards;overflow:hidden}
+@keyframes slideUp{from{opacity:0;transform:translateY(25px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.card-header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.card-timestamp{font-size:.78rem;color:var(--text-muted);background:rgba(0,0,0,.35);padding:5px 8px;border-radius:5px}
+.cat-badge{background:var(--green-primary);color:white;padding:3px 8px;border-radius:4px;font-size:.72rem;font-weight:600}
+
+.card-title{padding:0 20px;font-size:1.25rem;font-weight:700;color:var(--white);margin-bottom:4px}
+.card-meta{padding:0 20px 8px;font-size:.82rem;color:var(--green-bright)}
+
+.card-body{display:flex;flex-direction:row;flex:1;gap:14px;padding:10px 16px 18px;align-items:stretch}
+.card-btn-stack{display:flex;flex-direction:column;gap:8px;min-width:110px;flex-shrink:0;padding-top:4px}
+.card-btn-stack .btn{font-size:.78rem;padding:6px 10px}
+.card-content-area{flex:1;background:rgba(0,0,0,.25);border-radius:10px;padding:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.card-media{width:100%;height:100%;object-fit:contain;border-radius:6px;background:rgba(0,0,0,.2)}
+.card-audio{width:85%;max-width:400px}
+.card-text-preview{width:100%;flex:1;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:.92rem;line-height:1.6;color:#d0f0d0;overflow-y:auto;word-break:break-word}
+.card-icon-large{font-size:4rem;margin:auto 0 12px;color:var(--green-bright)}
+
+/* Add Button */
+#add-btn{position:fixed;bottom:26px;right:26px;width:60px;height:60px;border-radius:50%;background:var(--white);color:var(--green-primary);border:3px solid var(--green-bright);font-size:2.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 25px var(--green-glow);transition:.3s;z-index:90}
+#add-btn:hover{transform:scale(1.1) rotate(90deg)}
+
+/* Modals */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(3,13,5,.93);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal-overlay.active{display:flex}
+.modal-box{background:linear-gradient(145deg,#0d2610 0%,#051007 100%);border:1px solid var(--green-primary);border-radius:14px;width:100%;max-width:820px;max-height:86vh;display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden}
+.modal-header{padding:14px 18px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-size:1rem;font-weight:600;color:var(--green-bright)}
+.close-modal{background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer}.close-modal:hover{color:white}
+.modal-body{padding:14px 18px;overflow-y:auto;flex:1}
+
+.type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;padding:6px 0}
+.type-category{grid-column:1/-1;margin-top:12px;margin-bottom:5px;font-size:.76rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px dashed rgba(255,255,255,.15);padding-bottom:2px}
+.type-item{background:rgba(46,139,87,.15);border:1px solid var(--border-color);border-radius:8px;padding:11px 6px;text-align:center;cursor:pointer;transition:.2s}
+.type-item:hover{background:rgba(46,139,87,.35);transform:translateY(-2px)}
+.type-item .t-icon{font-size:1.5rem;display:block;margin-bottom:3px}.type-item .t-ext{font-size:.7rem;color:#81c784;font-weight:600}
+
+.name-wrap{padding:24px;display:flex;flex-direction:column;gap:14px;align-items:center}
+.name-wrap input{width:100%;padding:12px;background:rgba(0,0,0,.4);border:1px solid var(--green-primary);border-radius:8px;color:white;font-size:1rem;outline:none}
+.name-wrap input:focus{border-color:var(--green-bright);box-shadow:0 0 8px var(--green-glow)}
+
+/* Full Viewport & Editor */
+.full-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(3,13,5,.97);z-index:250;display:none;flex-direction:column;padding:14px}
+.full-overlay.active{display:flex}
+.full-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:12px;flex-wrap:wrap;gap:10px}
+.full-title{font-size:1.2rem;color:var(--white);font-weight:600}
+.full-toolbar{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:12px}
+.full-toolbar button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:var(--text-muted);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:.82rem}
+.full-toolbar button:hover{background:rgba(46,139,87,.3);color:white}
+.full-content{flex:1;overflow:auto;background:rgba(0,0,0,.35);border-radius:10px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+.rich-editor{width:100%;min-height:100%;padding:12px;font-family:'Courier New',monospace;font-size:1rem;line-height:1.6;color:#d0f0d0;background:transparent;outline:none;white-space:pre-wrap;word-break:break-word}
+.rich-editor img{max-width:100%;max-height:400px;object-fit:contain;margin:10px 0;border-radius:6px;cursor:pointer}
+.rich-editor:empty::before{content:attr(data-placeholder);color:#555}
+.full-media{max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px}
+.full-icon{font-size:9rem;margin:auto 0 20px;color:var(--green-bright)}
+.full-actions{display:flex;gap:12px;padding:12px 0 0;flex-wrap:wrap}
+
+/* Image Insert Modal */
+.img-insert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;padding:10px 0}
+.img-insert-item{border:1px solid var(--border-color);border-radius:6px;overflow:hidden;cursor:pointer;transition:.2s}
+.img-insert-item:hover{border-color:var(--green-bright);transform:scale(1.05)}
+.img-insert-item img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Slideshow */
+#slideshow-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#010603;z-index:300;display:none;flex-direction:column}
+#slideshow-overlay.active{display:flex}
+.slide-container{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:20px}
+.slide-card{position:absolute;width:95%;max-width:1200px;height:85vh;background:var(--card-bg);border:1px solid var(--border-color);border-radius:var(--radius);padding:20px;display:none;flex-direction:column;animation:slideIn .4s ease;overflow:hidden}
+@keyframes slideIn{from{opacity:0;transform:scale(.96)translateY(15px)}to{opacity:1;transform:scale(1)translateY(0)}}
+.slide-card.active{display:flex}
+.slide-content{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:12px;padding:10px;gap:10px;width:100%}
+.slide-text{width:100%;height:100%;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:.95rem;line-height:1.6;color:#d0f0d0;overflow-y:auto;word-break:break-word}
+.slide-media{max-width:100%;max-height:100%;object-fit:contain}
+.slide-counter{position:fixed;top:18px;right:20px;background:rgba(0,0,0,.6);padding:5px 12px;border-radius:20px;font-size:.85rem;color:var(--text-muted);z-index:310}
+.slide-controls{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:310}
+.slide-btn{width:46px;height:46px;border-radius:50%;background:var(--green-primary);border:2px solid var(--green-bright);color:var(--white);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.slide-btn:hover{background:var(--green-bright);transform:scale(1.1)}
+
+/* Startup & Toast */
+.project-modal-box{max-width:480px;text-align:center;padding:30px 24px}
+.project-modal-box h2{color:var(--green-bright);margin-bottom:10px;font-size:1.3rem}
+.project-modal-box p{color:var(--text-muted);margin-bottom:20px;line-height:1.4}
+.project-btns{display:flex;flex-direction:column;gap:10px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0d2610;border:1px solid var(--green-bright);color:white;padding:10px 20px;border-radius:8px;z-index:400;animation:toastAnim 2.5s ease forwards;box-shadow:0 4px 15px rgba(0,0,0,.5)}
+@keyframes toastAnim{0%{opacity:0;transform:translate(-50%,20px)}15%{opacity:1;transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0}}
+.hidden{display:none!important}
+.fs-note{font-size:.75rem;color:#888;margin-top:8px;text-align:center}
+</style>
+</head>
+<body>
+<header id="app-header">
+  <div class="header-left">
+    <h1>⏳ Timeline Projects</h1>
+    <div class="file-menu-wrap">
+      <button class="file-btn" id="menu-toggle">📁 File</button>
+      <div class="file-dropdown" id="menu-dropdown">
+        <button id="f-new">📄 New Project</button>
+        <button id="f-backup">💾 Backup Project</button>
+        <button id="f-open">📂 Open Project</button>
+        <div class="divider"></div>
+        <button id="f-clear" class="exit">🗑️ Clear All Data</button>
+      </div>
+    </div>
+  </div>
+  <div class="header-controls">
+    <span id="project-name-display" style="color:var(--text-muted);font-size:.85rem;margin-right:8px;"></span>
+    <button class="btn" id="btn-slideshow">▶ Slideshow</button>
+    <button class="btn exit" id="btn-exit">✖ Exit</button>
+  </div>
+</header>
+
+<main id="timeline-wrapper">
+  <div id="timeline-empty"><div>🌿</div><p>Click the + button to start your timeline</p></div>
+</main>
+<button id="add-btn">+</button>
+
+<!-- TYPE MODAL -->
+<div class="modal-overlay" id="modal-types">
+  <div class="modal-box">
+    <div class="modal-header"><span class="modal-title">Select File Type</span><button class="close-modal">×</button></div>
+    <div class="modal-body" id="type-list"></div>
+  </div>
+</div>
+
+<!-- NAME MODAL -->
+<div class="modal-overlay" id="modal-name">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header"><span class="modal-title">Name Your Entry</span><button class="close-modal">×</button></div>
+    <div class="name-wrap">
+      <input type="text" id="entry-name" placeholder="e.g., Design Mockup V1, Meeting Notes..." maxlength="50" autocomplete="off">
+      <button class="btn" id="btn-proceed" style="width:100%">Choose File</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="file-input" hidden>
+
+<!-- FULL VIEW MODAL -->
+<div class="full-overlay" id="full-overlay">
+  <div class="full-header">
+    <span class="full-title" id="full-title">Preview</span>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-edit" id="full-edit-btn" style="display:none">✏️ Edit</button>
+      <button class="btn exit" id="full-close">✖ Close</button>
+    </div>
+  </div>
+  <div class="full-toolbar" id="full-toolbar" style="display:none">
+    <button id="insert-img-btn">🖼️ Insert Image at Cursor</button>
+  </div>
+  <div class="full-content" id="full-content"></div>
+  <div class="full-actions">
+    <button class="btn btn-preview" id="full-preview-btn" style="display:none">👁️ Preview</button>
+    <button class="btn" id="full-save-btn" style="display:none">💾 Save Changes</button>
+  </div>
+</div>
+
+<!-- SLIDESHOW -->
+<div id="slideshow-overlay">
+  <div class="slide-counter" id="slide-counter">0 / 0</div>
+  <div class="slide-container" id="slide-container"></div>
+  <div class="slide-controls">
+    <button class="slide-btn" id="slide-prev">←</button>
+    <button class="slide-btn" id="slide-next">→</button>
+    <button class="slide-btn exit" id="slide-exit">✖</button>
+  </div>
+</div>
+
+<!-- STARTUP MODAL -->
+<div class="modal-overlay" id="startup-modal">
+  <div class="modal-box project-modal-box">
+    <h2>🌱 Start Timeline Projects</h2>
+    <p id="startup-msg">Create a workspace folder name for your project. All files & updates are auto-saved here.</p>
+    <div class="project-btns">
+      <input type="text" id="new-project-name" placeholder="Enter Project Name..." style="width:100%;padding:12px;background:rgba(0,0,0,.4);border:1px solid var(--green-primary);border-radius:8px;color:white;font-size:1rem;text-align:center;margin-bottom:10px">
+      <button class="btn" id="start-create" style="width:100%">📁 Create & Choose Save Location</button>
+      <button class="btn btn-preview" id="start-open" style="width:100%;margin-top:6px">📂 Load Existing Project</button>
+      <div class="fs-note">💡 Your browser will open a folder picker to select where to save your project</div>
+    </div>
+  </div>
+</div>
+
+<!-- INSERT IMAGE MODAL -->
+<div class="modal-overlay" id="insert-img-modal">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-header"><span class="modal-title">Choose Image to Insert</span><button class="close-modal">×</button></div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted);margin-bottom:10px">Select an existing image or upload a new one:</p>
+      <button class="btn" id="upload-new-img" style="margin-bottom:12px;width:100%">⬆️ Upload New Image</button>
+      <input type="file" id="insert-img-input" accept="image/*" hidden>
+      <div class="img-insert-grid" id="insert-img-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const CATEGORIES={
+"Document Files":{icon:"📄",exts:[".txt",".docx",".pdf",".md",".csv"]},
+"Spreadsheet Files":{icon:"📊",exts:[".xlsx",".xls",".csv"]},
+"Presentation Files":{icon:"🎞️",exts:[".pptx",".ppt"]},
+"Image Files":{icon:"🖼️",exts:[".jpg",".jpeg",".png",".gif",".webp",".svg"]},
+"Audio Files":{icon:"🎧",exts:[".mp3",".wav",".flac",".aac"]},
+"Video Files":{icon:"🎬",exts:[".mp4",".mov",".mkv",".avi",".webm"]},
+"Archive / Compressed":{icon:"📦",exts:[".zip",".rar",".7z",".tar",".gz"]},
+"Executable / Installer":{icon:"⚙️",exts:[".exe",".apk",".msi",".dmg",".deb"]},
+"Web Development":{icon:"🌐",exts:[".html",".css",".js",".json",".php"]},
+"Programming Files":{icon:"💻",exts:[".py",".java",".cpp",".c",".js",".ts"]},
+"Database Files":{icon:"🗄️",exts:[".sql",".db",".sqlite"]},
+"Configuration Files":{icon:"⚙️",exts:[".json",".yaml",".yml",".env",".ini"]},
+"System Files":{icon:"🖥️",exts:[".dll",".sys",".dat"]},
+"Font Files":{icon:"🔤",exts:[".ttf",".otf",".woff",".woff2"]},
+"Science / Engineering":{icon:"📐",exts:[".dwg",".dxf",".stl",".obj"]},
+"AI / Machine Learning":{icon:"🤖",exts:[".onnx",".pth",".h5",".safetensors"]},
+"Game Files":{icon:"🎮",exts:[".unity",".pak",".sav"]},
+"Security / Certificates":{icon:"🔐",exts:[".pem",".crt",".key"]},
+"Robotics / Automation":{icon:"🦾",exts:[".urdf",".sdf",".rosbag"]},
+"Virtualization Files":{icon:"💾",exts:[".vmdk",".ova",".vdi"]},
+"Disc / Media Files":{icon:"💿",exts:[".iso",".img",".bin"]},
+"Email Files":{icon:"📧",exts:[".eml",".pst",".msg"]},
+"GIS / Map Files":{icon:"🗺️",exts:[".geojson",".kml",".shp"]},
+"Blockchain / Crypto":{icon:"₿",exts:[".wallet",".keystore"]},
+"Special Files":{icon:"✨",exts:[".torrent",".ics",".vcf"]}
+};
+const TEXT_EXT=[".txt",".md",".js",".json",".html",".css",".py",".java",".cpp",".c",".ts",".php",".sql",".yaml",".yml",".env",".ini",".xml",".sh",".bat",".log",".cfg"];
+const IMG_EXT=[".jpg",".jpeg",".png",".gif",".webp",".svg"];
+const VIDEO_EXT=[".mp4",".mov",".mkv",".avi",".webm"];
+const AUDIO_EXT=[".mp3",".wav",".flac",".aac"];
+
+// ── DOM ──
+const D={
+  wrap:document.getElementById('timeline-wrapper'),empty:document.getElementById('timeline-empty'),
+  addBtn:document.getElementById('add-btn'),modalTypes:document.getElementById('modal-types'),
+  modalName:document.getElementById('modal-name'),typeList:document.getElementById('type-list'),
+  nameIn:document.getElementById('entry-name'),btnProc:document.getElementById('btn-proceed'),
+  fileIn:document.getElementById('file-input'),btnSlide:document.getElementById('btn-slideshow'),
+  btnExit:document.getElementById('btn-exit'),
+  menuToggle:document.getElementById('menu-toggle'),menuDrop:document.getElementById('menu-dropdown'),
+  fNew:document.getElementById('f-new'),fBackup:document.getElementById('f-backup'),
+  fOpen:document.getElementById('f-open'),fClear:document.getElementById('f-clear'),
+  fullOverlay:document.getElementById('full-overlay'),fullTitle:document.getElementById('full-title'),
+  fullContent:document.getElementById('full-content'),fullEditBtn:document.getElementById('full-edit-btn'),
+  fullClose:document.getElementById('full-close'),fullPreviewBtn:document.getElementById('full-preview-btn'),
+  fullSaveBtn:document.getElementById('full-save-btn'),fullToolbar:document.getElementById('full-toolbar'),
+  insertImgBtn:document.getElementById('insert-img-btn'),
+  slideOverlay:document.getElementById('slideshow-overlay'),slideCont:document.getElementById('slide-container'),
+  slidePrev:document.getElementById('slide-prev'),slideNext:document.getElementById('slide-next'),
+  slideExit:document.getElementById('slide-exit'),slideCtr:document.getElementById('slide-counter'),
+  startup:document.getElementById('startup-modal'),startCreate:document.getElementById('start-create'),
+  startOpen:document.getElementById('start-open'),newProjName:document.getElementById('new-project-name'),
+  projDisplay:document.getElementById('project-name-display'),
+  insertModal:document.getElementById('insert-img-modal'),uploadNewImg:document.getElementById('upload-new-img'),
+  insertImgInput:document.getElementById('insert-img-input'),insertImgList:document.getElementById('insert-img-list')
+};
+
+let db,projectId=localStorage.getItem('timeline_project_id')||'',projectDirHandle=null,timeline=[],selType=null,slideIdx=0,editMode=false,currentViewId=null,cursorPos=null;
+
+// ── IndexedDB ──
+const DB_NAME='TimelineProjDB_V3';
+function initDB(){return new Promise((ok,no)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('e'))d.createObjectStore('e',{keyPath:'id',autoIncrement:true})};r.onsuccess=e=>{db=e.target.result;ok()};r.onerror=e=>no(e.target.error)})}
+function putEntry(d){return new Promise((ok,no)=>{const t=db.transaction('e','readwrite');t.objectStore('e').put(d);t.oncomplete=()=>ok();t.onerror=e=>no(e.target.error)})}
+function getAllEntries(){return new Promise((ok,no)=>{const t=db.transaction('e','readonly');const r=t.objectStore('e').getAll();r.onsuccess=()=>{timeline=r.result.filter(x=>x.projectId===projectId).sort((a,b)=>a.id-b.id);ok()};r.onerror=e=>no(e.target.error)})}
+function clearAllEntries(){return new Promise((ok,no)=>{const t=db.transaction('e','readwrite');t.objectStore('e').clear();t.oncomplete=()=>ok();t.onerror=e=>no(e.target.error)})}
+
+// ── Helpers ──
+function fmtSize(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB'}
+function isTextExt(e){return TEXT_EXT.includes(e.toLowerCase())}
+function revokeSafe(item){if(item.previewUrl){try{URL.revokeObjectURL(item.previewUrl)}catch(e){}item.previewUrl=null}}
+function genUrl(blob){return blob?URL.createObjectURL(blob):null}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function getNowStr(){return new Date().toISOString().slice(0,16).replace('T','_')}
+
+// ── File System Access API Helpers ──
+async function ensureProjectFolder(name){
+  try{
+    if('showDirectoryPicker' in window){
+      const dirHandle=await window.showDirectoryPicker({mode:'readwrite',startIn:'documents'});
+      await createFileIfNotExists(dirHandle,'timeline_project.json','{}');
+      await createFileIfNotExists(dirHandle,'assets/','.');
+      projectDirHandle=dirHandle;
+      return {success:true,dirHandle};
+    }else{
+      toast('⚠️ Folder picker not supported. Using browser storage only.');
+      return {success:false};
+    }
+  }catch(err){
+    if(err.name==='AbortError')return {success:false,cancelled:true};
+    console.error('Folder error:',err);
+    toast('⚠️ Could not access folder. Using browser storage.');
+    return {success:false};
+  }
+}
+async function createFileIfNotExists(dirHandle,fileName,content){
+  try{
+    if(fileName.includes('/')){
+      const parts=fileName.split('/');
+      let current=dirHandle;
+      for(let i=0;i<parts.length-1;i++){
+        current=await current.getDirectoryHandle(parts[i],{create:true});
+      }
+      await current.getFileHandle(parts[parts.length-1],{create:true});
+    }else{
+      await dirHandle.getFileHandle(fileName,{create:true});
+    }
+  }catch(e){}
+}
+async function saveProjectToFileSystem(data){
+  if(!projectDirHandle)return false;
+  try{
+    const fileHandle=await projectDirHandle.getFileHandle('timeline_project.json',{create:true});
+    const writable=await fileHandle.createWritable();
+    await writable.write(JSON.stringify(data,null,2));
+    await writable.close();
+    return true;
+  }catch(err){console.error('Save to FS failed:',err);return false}
+}
+async function loadProjectFromFileSystem(dirHandle){
+  try{
+    const fileHandle=await dirHandle.getFileHandle('timeline_project.json');
+    const file=await fileHandle.getFile();
+    const text=await file.text();
+    return JSON.parse(text);
+  }catch(err){console.error('Load from FS failed:',err);return null}
+}
+async function saveAssetToProjectFolder(filename,blob){
+  if(!projectDirHandle)return null;
+  try{
+    let assetsDir;
+    try{assetsDir=await projectDirHandle.getDirectoryHandle('assets',{create:true});}catch(e){assetsDir=projectDirHandle}
+    const fileHandle=await assetsDir.getFileHandle(filename,{create:true});
+    const writable=await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return URL.createObjectURL(blob);
+  }catch(err){console.error('Asset save failed:',err);return null}
+}
+
+// ── Project Setup ──
+async function loadProject(id,dirHandle=null){
+  projectId=id;localStorage.setItem('timeline_project_id',id);
+  projectDirHandle=dirHandle;
+  D.projDisplay.textContent=`📁 ${id}`;
+  D.startup.classList.remove('active');
+  if(dirHandle){
+    const loaded=await loadProjectFromFileSystem(dirHandle);
+    if(loaded&&loaded.timeline){
+      await clearAllEntries();
+      for(const item of loaded.timeline){await putEntry(item)}
+    }
+  }
+  renderTimeline();
+  toast(`Loaded: ${id}`);
+}
+D.startCreate.onclick=async()=>{
+  const n=D.newProjName.value.trim();
+  if(!n)return alert('Please enter a project name.');
+  const fs=await ensureProjectFolder(n);
+  if(fs.cancelled)return;
+  loadProject(n,fs.dirHandle);
+};
+D.startOpen.onclick=async()=>{
+  if('showDirectoryPicker' in window){
+    try{
+      const dirHandle=await window.showDirectoryPicker({mode:'readwrite'});
+      const loaded=await loadProjectFromFileSystem(dirHandle);
+      if(loaded&&loaded.projectId){
+        loadProject(loaded.projectId,dirHandle);
+      }else{
+        alert('Invalid or empty project folder.');
+      }
+    }catch(err){if(err.name!=='AbortError')alert('Could not open folder.');}
+  }else{
+    D.fOpen.click();
+  }
+};
+
+// ── Build Type Modal ──
+function buildTypes(){
+  D.typeList.innerHTML='';
+  for(const[cat,data]of Object.entries(CATEGORIES)){
+    const ct=document.createElement('div');ct.className='type-category';ct.textContent=cat;D.typeList.appendChild(ct);
+    const gr=document.createElement('div');gr.className='type-grid';
+    data.exts.forEach(ext=>{
+      const btn=document.createElement('button');btn.className='type-item';
+      btn.innerHTML=`<span class="t-icon">${data.icon}</span><span class="t-ext">${ext}</span>`;
+      btn.onclick=()=>{selType={cat,ext,icon:data.icon};D.modalTypes.classList.remove('active');D.modalName.classList.add('active');D.nameIn.focus();D.nameIn.value=''};
+      gr.appendChild(btn);
+    });D.typeList.appendChild(gr);
+  }
+}
+
+// ── Render ──
+async function renderTimeline(){
+  await getAllEntries();
+  D.wrap.innerHTML='';
+  if(!timeline.length){D.wrap.appendChild(D.empty);D.empty.style.display='block';return}
+  D.empty.style.display='none';
+  timeline.forEach(item=>D.wrap.appendChild(buildCard(item)));
+  setTimeout(()=>{D.wrap.scrollTop=D.wrap.scrollHeight},50);
+}
+
+function buildCard(item){
+  const card=document.createElement('div');card.className='timeline-card';
+  const dt=new Date(item.timestamp);
+  const ds=dt.toLocaleDateString(),ts=dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const ext=item.ext.toLowerCase();
+  let inner='';
+  revokeSafe(item);
+  const pUrl=genUrl(item.fileBlob);
+
+  if(isTextExt(ext)){
+    const txt=item.textContent||'(empty)';
+    inner=`<div class="card-text-preview">${txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
+  }else if(IMG_EXT.includes(ext)){
+    inner=`<img src="${pUrl}" class="card-media" alt="${item.name}" draggable="false">`;
+  }else if(VIDEO_EXT.includes(ext)){
+    inner=`<video src="${pUrl}" controls class="card-media"></video>`;
+  }else if(AUDIO_EXT.includes(ext)){
+    inner=`<audio src="${pUrl}" controls class="card-audio"></audio>`;
+  }else if(ext==='.pdf'){
+    inner=`<iframe src="${pUrl}" style="width:100%;height:100%;border:none;border-radius:8px;background:#fff"></iframe>`;
+  }else{
+    const cat=CATEGORIES[item.cat];const ico=cat?cat.icon:'📁';
+    inner=`<div class="card-icon-large">${ico}</div><div style="color:#a5d6a7;margin-bottom:10px">${item.customName}</div>`;
+  }
+
+  card.innerHTML=`
+    <div class="card-header"><span class="card-timestamp">📅 ${ds} ⏰ ${ts}</span><span class="cat-badge">${item.cat}</span></div>
+    <div class="card-title">${item.customName}</div>
+    <div class="card-meta">${item.origName} • ${ext.toUpperCase()} • ${fmtSize(item.size)}</div>
+    <div class="card-body">
+      <div class="card-btn-stack">
+        <button class="btn btn-preview preview-btn" data-id="${item.id}">👁️ Preview</button>
+        ${isTextExt(ext)?`<button class="btn btn-edit edit-btn" data-id="${item.id}">✏️ Edit</button>`:''}
+        <button class="btn download-btn" data-id="${item.id}">⬇️ Download</button>
+      </div>
+      <div class="card-content-area">${inner}</div>
+    </div>`;
+  return card;
+}
+
+// ── Upload Flow ──
+D.btnProc.onclick=()=>{if(!D.nameIn.value.trim())return alert('Enter name first.');D.fileIn.accept=selType.ext;D.fileIn.click()};
+D.fileIn.onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const custom=D.nameIn.value.trim();D.nameIn.value='';D.modalName.classList.remove('active');
+  const item={customName:custom,origName:f.name,ext:selType.ext,cat:selType.cat,size:f.size,timestamp:Date.now(),fileBlob:null,textContent:null,projectId};
+
+  if(isTextExt(selType.ext.toLowerCase())){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      item.textContent=ev.target.result;item.fileBlob=new Blob([ev.target.result],{type:'text/plain'});
+      putEntry(item).then(async()=>{
+        await saveProjectToFileSystem({projectId,version:3,timeline:timeline.map(t=>({...t,fileBlob:null,previewUrl:null}))});
+        renderTimeline();toast(`Auto-saved ✓ to ${projectId}`);
+      });
+    };reader.readAsText(f);
+  }else{
+    item.fileBlob=f;
+    putEntry(item).then(async()=>{
+      if(projectDirHandle)await saveAssetToProjectFolder(f.name,f);
+      await saveProjectToFileSystem({projectId,version:3,timeline:timeline.map(t=>({...t,fileBlob:null,previewUrl:null}))});
+      renderTimeline();toast(`Auto-saved ✓ to ${projectId}`);
+    });
+  }
+  D.fileIn.value='';selType=null;
+};
+
+// ── Full Viewport & Editor ──
+function openFull(id,mode='preview'){
+  const item=timeline.find(i=>i.id===id);if(!item)return;
+  currentViewId=id;editMode=(mode==='edit');
+  const ext=item.ext.toLowerCase();
+  revokeSafe(item);
+  const pUrl=genUrl(item.fileBlob);
+
+  D.fullOverlay.classList.add('active');
+  D.fullTitle.textContent=item.customName;
+  D.fullContent.innerHTML='';D.fullSaveBtn.style.display='none';D.fullEditBtn.style.display='none';D.fullPreviewBtn.style.display='none';
+  D.fullToolbar.style.display=(editMode&&isTextExt(ext))?'flex':'none';
+
+  if(editMode){
+    D.fullEditBtn.style.display='none';D.fullPreviewBtn.style.display='inline-flex';D.fullSaveBtn.style.display='inline-flex';
+    if(isTextExt(ext)){
+      const div=document.createElement('div');div.className='rich-editor';div.contentEditable=true;
+      div.dataset.placeholder='Type or insert images here...';div.innerHTML=item.textContent||'';D.fullContent.appendChild(div);
+      div.focus();
+    }else{D.fullContent.innerHTML='<div style="color:#a5d6a7;text-align:center;margin-top:20%">Editing not supported for this format.</div>'}
+  }else{
+    D.fullPreviewBtn.style.display='none';D.fullEditBtn.style.display=(isTextExt(ext))?'inline-flex':'none';D.fullSaveBtn.style.display='none';
+    if(isTextExt(ext)){
+      const pre=document.createElement('div');pre.className='rich-editor';pre.contentEditable=false;pre.innerHTML=item.textContent||'(empty)';D.fullContent.appendChild(pre);
+    }else if(IMG_EXT.includes(ext)){D.fullContent.innerHTML=`<img src="${pUrl}" class="full-media" alt="">`}
+    else if(VIDEO_EXT.includes(ext)){D.fullContent.innerHTML=`<video src="${pUrl}" controls class="full-media" style="max-height:90%"></video>`}
+    else if(AUDIO_EXT.includes(ext)){D.fullContent.innerHTML=`<audio src="${pUrl}" controls class="full-media" style="width:80%"></audio>`}
+    else if(ext==='.pdf'){D.fullContent.innerHTML=`<iframe src="${pUrl}" style="width:100%;height:100%;border:none;border-radius:8px"></iframe>`}
+    else{const c=CATEGORIES[item.cat];const ico=c?cat.icon:'📁';D.fullContent.innerHTML=`<div class="full-icon">${ico}</div><div style="color:#a5d6a7;font-size:1.1rem">${item.customName}</div>`}
+  }
+}
+
+// ── Image Insert Logic ──
+D.insertImgBtn.onclick=()=>{
+  D.insertModal.classList.add('active');
+  D.insertImgList.innerHTML='';
+  const imgs=timeline.filter(t=>IMG_EXT.includes(t.ext.toLowerCase()));
+  if(!imgs.length)D.insertImgList.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px">No images in project yet.</div>';
+  imgs.forEach(img=>{
+    const u=genUrl(img.fileBlob);
+    const d=document.createElement('div');d.className='img-insert-item';
+    d.innerHTML=`<img src="${u}">`;
+    d.onclick=()=>{
+      insertImageAtCursor(u,img.origName);
+      D.insertModal.classList.remove('active');
+    };
+    D.insertImgList.appendChild(d);
+  });
+};
+D.uploadNewImg.onclick=()=>D.insertImgInput.click();
+D.insertImgInput.onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    insertImageAtCursor(ev.target.result,f.name);
+    D.insertModal.classList.remove('active');
+  };reader.readAsDataURL(f);
+  D.insertImgInput.value='';
+};
+function insertImageAtCursor(src,name){
+  const editor=D.fullContent.querySelector('.rich-editor');
+  if(!editor)return;
+  editor.focus();
+  const sel=window.getSelection();
+  if(!sel.rangeCount){editor.innerHTML+=`<img src="${src}" alt="${name}"><br>`;return;}
+  const range=sel.getRangeAt(0);
+  range.deleteContents();
+  const img=document.createElement('img');img.src=src;img.alt=name;
+  range.insertNode(img);
+  const br=document.createElement('br');
+  range.setStartAfter(br);range.collapse(true);
+  sel.removeAllRanges();sel.addRange(range);
+}
+
+// ── Slideshow ──
+function openSlideshow(){
+  if(!timeline.length)return alert('Add files first!');
+  D.slideOverlay.classList.add('active');slideIdx=0;renderSlides();
+}
+function renderSlides(){
+  D.slideCont.innerHTML='';
+  timeline.forEach((item,i)=>{
+    const card=document.createElement('div');card.className='slide-card'+(i===slideIdx?' active':'');
+    const dt=new Date(item.timestamp);const ds=dt.toLocaleDateString(),ts=dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const ext=item.ext.toLowerCase();revokeSafe(item);const pUrl=genUrl(item.fileBlob);
+    let cont='';
+    if(isTextExt(ext)){cont=`<div class="slide-text">${item.textContent||'(empty)'}</div>`}
+    else if(IMG_EXT.includes(ext)){cont=`<img src="${pUrl}" class="slide-media" draggable="false">`}
+    else if(VIDEO_EXT.includes(ext)){cont=`<video src="${pUrl}" controls class="slide-media"></video>`}
+    else if(AUDIO_EXT.includes(ext)){cont=`<audio src="${pUrl}" controls class="slide-media" style="width:80%"></audio>`}
+    else if(ext==='.pdf'){cont=`<iframe src="${pUrl}" style="width:100%;height:90%;border:none;border-radius:8px"></iframe>`}
+    else{const c=CATEGORIES[item.cat];const ico=c?cat.icon:'📁';cont=`<div style="font-size:6rem">${ico}</div><div style="color:#a5d6a7;margin-top:10px">${item.customName}</div>`}
+    card.innerHTML=`<div class="card-header"><span class="card-timestamp">📅 ${ds} ⏰ ${ts}</span><span class="cat-badge">${item.cat}</span></div>
+      <div class="card-title">${item.customName}</div><div class="slide-content">${cont}</div>`;
+    D.slideCont.appendChild(card);
+  });
+  D.slideCtr.textContent=`${slideIdx+1} / ${timeline.length}`;
+}
+
+// ── File Menu & Project Management ──
+D.menuToggle.onclick=()=>D.menuDrop.classList.toggle('show');
+document.addEventListener('click',e=>{if(!e.target.closest('.file-menu-wrap'))D.menuDrop.classList.remove('show')});
+
+D.fNew.onclick=()=>{D.startup.classList.add('active')};
+D.fBackup.onclick=async()=>{
+  await getAllEntries();
+  const data=timeline.map(t=>({...t,fileBlob:null,previewUrl:null}));
+  const blob=new Blob([JSON.stringify({projectId,version:3,timeline:data,backupDate:getNowStr()},null,2)],{type:'application/json'});
+  
+  if(projectDirHandle){
+    try{
+      const backupsDir=await projectDirHandle.getDirectoryHandle('backups',{create:true});
+      const fileHandle=await backupsDir.getFileHandle(`${projectId}_backup_${getNowStr()}.tlproj`,{create:true});
+      const writable=await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      toast('Backup saved to project folder ✓');
+    }catch(err){fallbackDownload(blob,`${projectId}_backup_${getNowStr()}.tlproj`);}
+  }else{
+    fallbackDownload(blob,`${projectId}_backup_${getNowStr()}.tlproj`);
+  }
+};
+function fallbackDownload(blob,filename){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();toast('Backup downloaded');
+}
+D.fOpen.onclick=async()=>{
+  if('showDirectoryPicker' in window){
+    try{
+      const dirHandle=await window.showDirectoryPicker({mode:'readwrite'});
+      const loaded=await loadProjectFromFileSystem(dirHandle);
+      if(loaded&&loaded.projectId){
+        loadProject(loaded.projectId,dirHandle);
+      }else{
+        alert('Invalid or empty project folder.');
+      }
+    }catch(err){if(err.name!=='AbortError')alert('Could not open folder.');}
+  }else{
+    const inp=document.createElement('input');inp.type='file';inp.accept='.tlproj,.json';inp.onchange=async e=>{
+      const f=e.target.files[0];if(!f)return;
+      const txt=await f.text();
+      try{
+        const p=JSON.parse(txt);
+        if(p.timeline&&Array.isArray(p.timeline)){
+          const pid=p.projectId||prompt('Project ID missing. Enter a name:');
+          if(!pid)return;
+          await clearAllEntries();
+          for(const item of p.timeline){item.projectId=pid;await putEntry(item)}
+          loadProject(pid);
+        }
+      }catch(err){alert('Invalid project file')}
+    };inp.click();
+  }
+};
+D.fClear.onclick=()=>{if(confirm('Clear ALL data? This cannot be undone.')){clearAllEntries().then(renderTimeline);toast('Data cleared')}};
+
+// ── Events ──
+D.addBtn.onclick=()=>D.modalTypes.classList.add('active');
+document.querySelectorAll('.close-modal').forEach(b=>b.onclick=()=>{b.closest('.modal-overlay').classList.remove('active');D.nameIn.value='';selType=null});
+
+D.wrap.onclick=async e=>{
+  const btn=e.target.closest('.btn');if(!btn)return;
+  const id=parseInt(btn.dataset.id);
+  if(btn.classList.contains('preview-btn'))openFull(id,'preview');
+  else if(btn.classList.contains('edit-btn'))openFull(id,'edit');
+  else if(btn.classList.contains('download-btn')){
+    const item=timeline.find(i=>i.id===id);if(item){const a=document.createElement('a');a.href=URL.createObjectURL(item.fileBlob);a.download=item.origName;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+  }
+};
+
+D.fullClose.onclick=()=>{D.fullOverlay.classList.remove('active');editMode=false};
+D.fullEditBtn.onclick=()=>openFull(currentViewId,'edit');
+D.fullPreviewBtn.onclick=()=>openFull(currentViewId,'preview');
+D.fullSaveBtn.onclick=async()=>{
+  const editor=D.fullContent.querySelector('.rich-editor');if(!editor)return;
+  const item=timeline.find(i=>i.id===currentViewId);if(!item)return;
+  item.textContent=editor.innerHTML;
+  const txt=editor.innerText||'';
+  item.fileBlob=new Blob([txt],{type:'text/plain'});item.size=txt.length;
+  await putEntry(item);
+  await saveProjectToFileSystem({projectId,version:3,timeline:timeline.map(t=>({...t,fileBlob:null,previewUrl:null}))});
+  await renderTimeline();
+  toast(`Auto-saved ✓ to ${projectId}`);openFull(currentViewId,'preview');
+};
+
+D.btnSlide.onclick=openSlideshow;
+D.btnExit.onclick=()=>{if(confirm('Exit Timeline Project? All data is auto-saved locally.'))location.reload()};
+D.slidePrev.onclick=()=>{if(slideIdx>0){slideIdx--;renderSlides()}};
+D.slideNext.onclick=()=>{if(slideIdx<timeline.length-1){slideIdx++;renderSlides()}};
+D.slideExit.onclick=()=>D.slideOverlay.classList.remove('active');
+
+// ── Init ──
+(async()=>{
+  await initDB();buildTypes();
+  if(projectId)loadProject(projectId);
+  else D.startup.classList.add('active');
+})();
+</script>
+</body>
+</html>
